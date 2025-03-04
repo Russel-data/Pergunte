@@ -56,7 +56,14 @@ def encontrar_resposta_por_palavras_chave(prompt, df):
             melhor_pontuacao = pontuacao
             melhor_resposta = row["Resposta"]
 
-    return melhor_resposta if melhor_resposta else "Desculpe, não entendi. Pode reformular a pergunta?"
+    # Formatar a resposta para exibir cada informação em uma linha
+    if melhor_resposta:
+        # Se a resposta for uma lista ou tiver múltiplas informações, separar por linhas
+        if isinstance(melhor_resposta, str) and "," in melhor_resposta:
+            melhor_resposta = "\n".join(melhor_resposta.split(","))
+        return melhor_resposta
+    else:
+        return "Desculpe, não entendi. Pode reformular a pergunta?"
 
 # Interface do app
 st.title("Pergunte para o Russel 🤖")
@@ -85,7 +92,11 @@ if modo == "Colaborador":
 
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+            if message["role"] == "user":
+                st.markdown(message["content"])
+            else:
+                # Usar st.text_area para exibir a resposta formatada
+                st.text_area("Resposta:", value=message["content"], height=100, disabled=True)
 
     prompt = st.chat_input("Digite sua mensagem...")
     if prompt:
@@ -96,7 +107,8 @@ if modo == "Colaborador":
         response = encontrar_resposta_por_palavras_chave(prompt, df)
         st.session_state.messages.append({"role": "assistant", "content": response})
         with st.chat_message("assistant"):
-            st.markdown(response)
+            # Exibir a resposta em uma caixa de texto formatada
+            st.text_area("Resposta:", value=response, height=100, disabled=True)
 
 # Modo Administrador com Senha
 elif modo == "Administrador":
@@ -160,7 +172,6 @@ elif modo == "Administrador":
         # Exibir todas as perguntas cadastradas
         st.subheader("Perguntas Cadastradas")
         st.dataframe(df[["Pergunta", "Resposta", "Palavras-Chave"]])
-
 
 
 
