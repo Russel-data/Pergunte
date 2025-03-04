@@ -56,14 +56,7 @@ def encontrar_resposta_por_palavras_chave(prompt, df):
             melhor_pontuacao = pontuacao
             melhor_resposta = row["Resposta"]
 
-    # Formatar a resposta para exibir cada informação em uma linha
-    if melhor_resposta:
-        # Se a resposta for uma lista ou tiver múltiplas informações, separar por linhas
-        if isinstance(melhor_resposta, str) and "," in melhor_resposta:
-            melhor_resposta = "\n".join(melhor_resposta.split(","))
-        return melhor_resposta
-    else:
-        return "Desculpe, não entendi. Pode reformular a pergunta?"
+    return melhor_resposta if melhor_resposta else "Desculpe, não entendi. Pode reformular a pergunta?"
 
 # Interface do app
 st.title("Pergunte para o Russel 🤖")
@@ -95,8 +88,8 @@ if modo == "Colaborador":
             if message["role"] == "user":
                 st.markdown(message["content"])
             else:
-                # Usar st.text_area para exibir a resposta formatada
-                st.text_area("Resposta:", value=message["content"], height=100, disabled=True)
+                # Exibir a resposta em uma caixa de texto formatada
+                st.text_area("Resposta:", value=message["content"], height=200, disabled=True)
 
     prompt = st.chat_input("Digite sua mensagem...")
     if prompt:
@@ -108,7 +101,7 @@ if modo == "Colaborador":
         st.session_state.messages.append({"role": "assistant", "content": response})
         with st.chat_message("assistant"):
             # Exibir a resposta em uma caixa de texto formatada
-            st.text_area("Resposta:", value=response, height=100, disabled=True)
+            st.text_area("Resposta:", value=response, height=200, disabled=True)
 
 # Modo Administrador com Senha
 elif modo == "Administrador":
@@ -133,14 +126,14 @@ elif modo == "Administrador":
         # Adicionar uma nova pergunta
         st.subheader("Adicionar Nova Pergunta")
         nova_pergunta = st.text_input("Digite a nova pergunta:")
-        nova_resposta = st.text_input("Digite a resposta correspondente:")
+        nova_resposta = st.text_area("Digite a resposta correspondente:", height=200)  # Caixa de texto para resposta
         novas_palavras_chave = st.text_input("Digite as palavras-chave (separadas por vírgula):")
 
         if st.button("Adicionar Pergunta e Resposta"):
             if nova_pergunta and nova_resposta and novas_palavras_chave:
                 novo_registro = pd.DataFrame({
                     "Pergunta": [nova_pergunta],
-                    "Resposta": [nova_resposta],
+                    "Resposta": [nova_resposta],  # Preserva o formato da caixa de texto
                     "Palavras-Chave": [[normalizar_texto(p) for p in novas_palavras_chave.split(",")]]
                 })
                 df = pd.concat([df, novo_registro], ignore_index=True)
@@ -158,7 +151,7 @@ elif modo == "Administrador":
             indice = df[df["Pergunta"] == pergunta_selecionada].index[0]
 
             pergunta_editada = st.text_input("Editar Pergunta:", df.at[indice, "Pergunta"])
-            resposta_editada = st.text_input("Editar Resposta:", df.at[indice, "Resposta"])
+            resposta_editada = st.text_area("Editar Resposta:", df.at[indice, "Resposta"], height=200)  # Caixa de texto para resposta
             palavras_chave_editadas = st.text_input("Editar Palavras-Chave (separadas por vírgula):", 
                                                     ", ".join(df.at[indice, "Palavras-Chave"]))
 
@@ -172,7 +165,6 @@ elif modo == "Administrador":
         # Exibir todas as perguntas cadastradas
         st.subheader("Perguntas Cadastradas")
         st.dataframe(df[["Pergunta", "Resposta", "Palavras-Chave"]])
-
 
 
 
