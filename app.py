@@ -51,7 +51,7 @@ def encontrar_resposta_por_palavras_chave(prompt, df):
         if pontuacao > melhor_pontuacao and pontuacao >= 50:
             melhor_pontuacao = pontuacao
             melhor_resposta = row["Resposta"]
-    return melhor_resposta if melhor_resposta else "Desculpe, não entendi. Pode reformular a pergunta?"
+    return melhor_resposta if melhor_resposta else "Desculpe no momento não poder te ajudar pergunte seu líder quem sabe ná próxima já terei essa informação para te ajudar"
 
 # Interface do app
 st.title("Pergunte para o Russel 🤖")
