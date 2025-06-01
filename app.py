@@ -10,7 +10,7 @@ st.set_page_config(page_title="Chatbot Russel 🤖", page_icon="🤖", layout="c
 ADMIN_PASSWORD = "admin123"
 DB_PATH = "chatbot.db"
 
-# Funções de banco de dados
+# ================= BANCO DE DADOS ====================
 def conectar_banco():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -62,7 +62,7 @@ def delete_data(id):
     st.success("✅ Pergunta excluída com sucesso!")
     st.rerun()
 
-# Normalização
+# ================= FUNÇÃO DE NORMALIZAÇÃO ====================
 def normalizar_texto(texto):
     if isinstance(texto, str):
         texto = unidecode(texto.lower())
@@ -71,16 +71,16 @@ def normalizar_texto(texto):
         return texto
     return ""
 
-# Dados
+# ================= CARREGAR DADOS ====================
 dados = load_data()
 
-# Interface
+# ================= INTERFACE STREAMLIT ====================
 st.title("🤖 Pergunte para o Russel")
 st.divider()
 
 modo = st.sidebar.radio("Selecione o modo:", ("Colaborador", "Administrador"))
 
-# ====================== COLABORADOR ========================
+# ======================= MODO COLABORADOR ========================
 if modo == "Colaborador":
     st.subheader("👋 Bem-vindo! Eu sou o Russel, sua assistente virtual.")
     st.info(
@@ -102,7 +102,7 @@ if modo == "Colaborador":
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        resposta = "❌ Desculpe, não encontrei uma resposta, verifica com Wallisson para ele me ensinar."
+        resposta = "❌ Desculpe, não encontrei uma resposta."
         realiza = False
 
         for row in dados:
@@ -118,14 +118,14 @@ if modo == "Colaborador":
             st.markdown(resposta.replace("\n", "  \n"))
 
         if realiza:
-            st.toast("Resposta encontrada com sucesso!", icon="✅")
+            st.toast("Reaposta realizada com sucesso!", icon="✅")
         else:
-            st.toast("Resposta não encontrada.", icon="❌")
+            st.toast("Não encontrei a resposta, fale com Wallisson.", icon="❌")
 
     if st.button("🗑️ Limpar conversa"):
         st.session_state.messages = []
 
-# ====================== ADMINISTRADOR ========================
+# ======================= MODO ADMINISTRADOR ========================
 elif modo == "Administrador":
     st.subheader("🔒 Área Administrativa")
     senha = st.text_input("Digite a senha:", type="password")
@@ -139,21 +139,26 @@ elif modo == "Administrador":
 
     if st.session_state.get("admin", False):
         st.divider()
-        st.header("📋 Gerenciamento de Perguntas")
+        st.header("📋 Gerenciamento de Perguntas e Respostas")
 
-        perguntas_dict = {row[0]: row[1] for row in dados}
-        id_selecionado = st.selectbox(
-            "Selecione uma pergunta ou 'Nova Pergunta':",
-            options=["Nova Pergunta"] + list(perguntas_dict.keys()),
-            format_func=lambda x: perguntas_dict.get(x, "Nova Pergunta")
+        # Cria lista de opções (id, pergunta)
+        opcoes = [("nova", "🆕 Nova Pergunta")] + [(row[0], row[1]) for row in dados]
+
+        id_selecionado, pergunta_selecionada = st.selectbox(
+            "Selecione uma pergunta ou cadastre nova:",
+            options=opcoes,
+            format_func=lambda x: x[1]
         )
 
-        if id_selecionado == "Nova Pergunta":
+        if id_selecionado == "nova":
             pergunta = st.text_area("Pergunta:")
             resposta = st.text_area("Resposta:")
 
             if st.button("💾 Salvar"):
-                save_data(pergunta, resposta)
+                if pergunta.strip() != "" and resposta.strip() != "":
+                    save_data(pergunta, resposta)
+                else:
+                    st.warning("⚠️ Preencha os campos de pergunta e resposta.")
         else:
             row = [r for r in dados if r[0] == id_selecionado][0]
             pergunta = st.text_area("Pergunta:", value=row[1])
@@ -162,10 +167,14 @@ elif modo == "Administrador":
             col1, col2 = st.columns(2)
             with col1:
                 if st.button("💾 Atualizar"):
-                    update_data(id_selecionado, pergunta, resposta)
+                    if pergunta.strip() != "" and resposta.strip() != "":
+                        update_data(id_selecionado, pergunta, resposta)
+                    else:
+                        st.warning("⚠️ Preencha os campos antes de atualizar.")
             with col2:
                 if st.button("🗑️ Excluir"):
-                    if st.confirm("Tem certeza que deseja excluir?"):
+                    confirma = st.checkbox("⚠️ Confirmar exclusão")
+                    if confirma:
                         delete_data(id_selecionado)
 
         st.divider()
@@ -175,7 +184,7 @@ elif modo == "Administrador":
 
         csv = df.to_csv(index=False).encode('utf-8')
         st.download_button(
-            "📥 Exportar para CSV",
+            "📥 Exportar Banco de Dados (CSV)",
             csv,
             "banco_perguntas.csv",
             "text/csv",
