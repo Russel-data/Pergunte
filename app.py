@@ -102,7 +102,7 @@ if modo == "Colaborador":
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        resposta = "❌ Desculpe, não encontrei uma resposta."
+        resposta = "❌ Desculpe, não encontrei uma resposta, verifica com Wallisson para ele me ensinar."
         realiza = False
 
         for row in dados:
@@ -118,9 +118,9 @@ if modo == "Colaborador":
             st.markdown(resposta.replace("\n", "  \n"))
 
         if realiza:
-            st.toast("✅ Realiza o exame!", icon="✅")
+            st.toast("Resposta encontrada com sucesso!", icon="✅")
         else:
-            st.toast("❌ Não realiza o exame.", icon="❌")
+            st.toast("Resposta não encontrada.", icon="❌")
 
     if st.button("🗑️ Limpar conversa"):
         st.session_state.messages = []
