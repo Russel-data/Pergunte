@@ -6,7 +6,7 @@ authors = ["Seu Nome <seuemail@exemplo.com>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.13"
+python = ">=3.9,!=3.9.7,<3.13"
 streamlit = "^1.35.0"
 firebase-admin = "^6.5.0"
 fuzzywuzzy = "^0.18.0"
