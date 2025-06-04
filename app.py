@@ -8,6 +8,7 @@ import pandas as pd
 import json
 import sys
 import traceback
+import time
 
 # Configuração da página
 st.set_page_config(
@@ -17,34 +18,38 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CONFIG FIREBASE --- #
-try:
-    if not firebase_admin._apps:
-        # Tenta carregar as credenciais do Streamlit Secrets
-        cred_dict = {
-            "type": st.secrets["firebase_credentials"]["type"],
-            "project_id": st.secrets["firebase_credentials"]["project_id"],
-            "private_key": st.secrets["firebase_credentials"]["private_key"].replace("\\n", "\n"),
-            "client_email": st.secrets["firebase_credentials"]["client_email"],
-            "auth_uri": st.secrets["firebase_credentials"]["auth_uri"],
-            "token_uri": st.secrets["firebase_credentials"]["token_uri"],
-            "auth_provider_x509_cert_url": st.secrets["firebase_credentials"]["auth_provider_x509_cert_url"],
-            "client_x509_cert_url": st.secrets["firebase_credentials"]["client_x509_cert_url"]
-        }
-        cred = credentials.Certificate(cred_dict)
-        firebase_admin.initialize_app(cred)
-    db = firestore.client()
-except Exception as e:
-    st.error(f"Erro ao conectar com o Firebase: {str(e)}")
-    st.error("Detalhes do erro:")
-    st.code(traceback.format_exc())
-    st.stop()
+# Configurações de cache
+@st.cache_resource(ttl=3600)
+def init_firebase():
+    try:
+        if not firebase_admin._apps:
+            cred_dict = {
+                "type": st.secrets["firebase_credentials"]["type"],
+                "project_id": st.secrets["firebase_credentials"]["project_id"],
+                "private_key": st.secrets["firebase_credentials"]["private_key"].replace("\\n", "\n"),
+                "client_email": st.secrets["firebase_credentials"]["client_email"],
+                "auth_uri": st.secrets["firebase_credentials"]["auth_uri"],
+                "token_uri": st.secrets["firebase_credentials"]["token_uri"],
+                "auth_provider_x509_cert_url": st.secrets["firebase_credentials"]["auth_provider_x509_cert_url"],
+                "client_x509_cert_url": st.secrets["firebase_credentials"]["client_x509_cert_url"]
+            }
+            cred = credentials.Certificate(cred_dict)
+            firebase_admin.initialize_app(cred)
+        return firestore.client()
+    except Exception as e:
+        st.error(f"Erro ao conectar com o Firebase: {str(e)}")
+        st.error("Detalhes do erro:")
+        st.code(traceback.format_exc())
+        st.stop()
+
+# Inicializa o Firebase
+db = init_firebase()
 
 # --- CONSTANTES --- #
 ADMIN_PASSWORD = "admin123"
 
 # --- FUNÇÕES --- #
-
+@st.cache_data(ttl=300)
 def normalizar_texto(texto):
     try:
         if isinstance(texto, str):
@@ -57,6 +62,7 @@ def normalizar_texto(texto):
         st.error(f"Erro ao normalizar texto: {str(e)}")
         return ""
 
+@st.cache_data(ttl=60)
 def carregar_dados():
     try:
         docs = db.collection("respostas").stream()
@@ -70,14 +76,19 @@ def carregar_dados():
         st.error(f"Erro ao carregar dados: {str(e)}")
         return []
 
+@st.cache_data(ttl=60)
 def carregar_sinonimos():
-    docs = db.collection("sinonimos").stream()
-    sinons = []
-    for doc in docs:
-        d = doc.to_dict()
-        d["id"] = doc.id
-        sinons.append(d)
-    return sinons
+    try:
+        docs = db.collection("sinonimos").stream()
+        sinons = []
+        for doc in docs:
+            d = doc.to_dict()
+            d["id"] = doc.id
+            sinons.append(d)
+        return sinons
+    except Exception as e:
+        st.error(f"Erro ao carregar sinônimos: {str(e)}")
+        return []
 
 def salvar_pergunta(pergunta, resposta):
     db.collection("respostas").document().set({
