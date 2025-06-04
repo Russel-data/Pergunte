@@ -10,9 +10,8 @@ import json
 # --- CONFIG FIREBASE --- #
 if not firebase_admin._apps:
     try:
-        # Tenta carregar as credenciais do Streamlit Secrets
-        cred_dict = st.secrets["firebase_credentials"]
-        cred = credentials.Certificate(cred_dict)
+        # Tenta carregar as credenciais do arquivo JSON
+        cred = credentials.Certificate("pergunte-russel-firebase-adminsdk-fbsvc-93db4386e2.json")
         firebase_admin.initialize_app(cred)
     except Exception as e:
         st.error(f"Erro ao conectar com o Firebase: {str(e)}")
