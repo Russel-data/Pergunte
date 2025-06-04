@@ -2,8 +2,9 @@
 name = "pergunte-russel"
 version = "0.1.0"
 description = "Chatbot com Firebase e Streamlit"
-authors = ["Seu Nome <seuemail@exemplo.com>"]
-license = "MIT"
+authors = ["Wallisson <seuemail@exemplo.com>"]
+package-mode = false
+
 
 [tool.poetry.dependencies]
 python = ">=3.9,!=3.9.7,<3.13"
