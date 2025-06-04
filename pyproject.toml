@@ -1,0 +1,42 @@
+[tool.poetry]
+name = "inteligencia"
+version = "0.1.0"
+description = ""
+authors = ["Russel Dataset <wallissom12@gmail.com>"]
+readme = "README.md"
+package-mode = false  # Desabilita o modo de pacote
+
+[tool.poetry.dependencies]
+python = "^3.12"
+streamlit = "^1.45.1"
+pandas = "^2.2.3"
+fuzzywuzzy = "^0.18.0"
+unidecode = "^1.3.8"
+openpyxl = "^3.1.5"
+python-levenshtein = "^0.27.1"
+firebase-admin = "^6.8.0"
+streamlit-option-menu = "^0.4.0"
+streamlit-lottie = "^0.0.5"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[theme]
+primaryColor = "#00C2FF"
+backgroundColor = "#0E1117"
+secondaryBackgroundColor = "#1A1A1D"
+textColor = "#FAFAFA"
+font = "sans serif"
+
+[firebase_credentials]
+type = "service_account"
+project_id = "seu-projeto-id"
+private_key_id = "sua-private-key-id"
+private_key = "sua-private-key"
+client_email = "seu-client-email"
+client_id = "seu-client-id"
+auth_uri = "https://accounts.google.com/o/oauth2/auth"
+token_uri = "https://oauth2.googleapis.com/token"
+auth_provider_x509_cert_url = "https://www.googleapis.com/oauth2/v1/certs"
+client_x509_cert_url = "sua-cert-url"
