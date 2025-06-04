@@ -23,6 +23,8 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "admin" not in st.session_state:
     st.session_state.admin = False
+if "chat_key" not in st.session_state:
+    st.session_state.chat_key = 0
 
 # Configurações de cache
 @st.cache_resource(ttl=3600)
@@ -230,24 +232,21 @@ if modo == "Colaborador":
     dados = carregar_dados()
     sinonimos = carregar_sinonimos()
 
-    chat_container = st.container()
-    with chat_container:
+    # Container para mensagens
+    messages_container = st.container()
+    with messages_container:
         for message in st.session_state.messages:
             if message["role"] == "user":
-                st.markdown(
-                    f'<div class="chat-message user-message">{message["content"].replace("\n", "<br>")}</div>',
-                    unsafe_allow_html=True,
-                )
+                st.markdown(f"**Você:** {message['content']}")
             else:
-                st.markdown(
-                    f'<div class="chat-message bot-message">{message["content"].replace("\n", "<br>")}</div>',
-                    unsafe_allow_html=True,
-                )
+                st.markdown(f"**Russel:** {message['content']}")
 
+    # Input para nova mensagem
     prompt = st.chat_input("Digite sua pergunta...")
 
     if prompt:
         st.session_state.messages.append({"role": "user", "content": prompt})
+        st.session_state.chat_key += 1
 
         prompt_norm = substituir_sinonimos(prompt, sinonimos)
 
@@ -264,6 +263,7 @@ if modo == "Colaborador":
 
     if st.button("🗑️ Limpar conversa"):
         st.session_state.messages = []
+        st.session_state.chat_key += 1
         st.rerun()
 
 elif modo == "Administrador":
