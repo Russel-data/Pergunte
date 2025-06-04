@@ -5,178 +5,81 @@ from fuzzywuzzy import fuzz
 from unidecode import unidecode
 import re
 import pandas as pd
-import json
-import sys
-import traceback
-import time
 
-# Configuração da página
-st.set_page_config(
-    page_title="Chatbot Russel 🤖",
-    page_icon="🤖",
-    layout="centered",
-    initial_sidebar_state="expanded"
-)
+# ================================
+# 🔥 CONFIGURAÇÃO DO FIREBASE 🔥
+# ================================
+if not firebase_admin._apps:
+    cred_info = {
+        "type": st.secrets["FIREBASE_TYPE"],
+        "project_id": st.secrets["FIREBASE_PROJECT_ID"],
+        "private_key_id": st.secrets["FIREBASE_PRIVATE_KEY_ID"],
+        "private_key": st.secrets["FIREBASE_PRIVATE_KEY"].replace('\\n', '\n'),
+        "client_email": st.secrets["FIREBASE_CLIENT_EMAIL"],
+        "client_id": st.secrets["FIREBASE_CLIENT_ID"],
+        "auth_uri": st.secrets["FIREBASE_AUTH_URI"],
+        "token_uri": st.secrets["FIREBASE_TOKEN_URI"],
+        "auth_provider_x509_cert_url": st.secrets["FIREBASE_AUTH_PROVIDER_X509_CERT_URL"],
+        "client_x509_cert_url": st.secrets["FIREBASE_CLIENT_X509_CERT_URL"]
+    }
+    cred = credentials.Certificate(cred_info)
+    firebase_admin.initialize_app(cred)
 
-# Inicialização do estado da sessão
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-if "admin" not in st.session_state:
-    st.session_state.admin = False
+db = firestore.client()
 
-# Configurações de cache
-@st.cache_resource(ttl=3600)
-def init_firebase():
-    try:
-        if not firebase_admin._apps:
-            cred_dict = {
-                "type": st.secrets["firebase_credentials"]["type"],
-                "project_id": st.secrets["firebase_credentials"]["project_id"],
-                "private_key": st.secrets["firebase_credentials"]["private_key"].replace("\\n", "\n"),
-                "client_email": st.secrets["firebase_credentials"]["client_email"],
-                "auth_uri": st.secrets["firebase_credentials"]["auth_uri"],
-                "token_uri": st.secrets["firebase_credentials"]["token_uri"],
-                "auth_provider_x509_cert_url": st.secrets["firebase_credentials"]["auth_provider_x509_cert_url"],
-                "client_x509_cert_url": st.secrets["firebase_credentials"]["client_x509_cert_url"]
-            }
-            cred = credentials.Certificate(cred_dict)
-            firebase_admin.initialize_app(cred)
-        return firestore.client()
-    except Exception as e:
-        st.error(f"Erro ao conectar com o Firebase: {str(e)}")
-        st.error("Detalhes do erro:")
-        st.code(traceback.format_exc())
-        return None
-
-# Inicializa o Firebase
-db = init_firebase()
-
-# --- CONSTANTES --- #
+# ================================
+# 🚩 CONSTANTES
+# ================================
 ADMIN_PASSWORD = "admin123"
 
-# --- FUNÇÕES --- #
-@st.cache_data(ttl=300)
+# ================================
+# 🔧 FUNÇÕES AUXILIARES
+# ================================
 def normalizar_texto(texto):
-    try:
-        if isinstance(texto, str):
-            texto = unidecode(texto.lower())
-            texto = re.sub(r'[^\w\s]', '', texto)
-            texto = re.sub(r'\s+', ' ', texto).strip()
-            return texto
-        return ""
-    except Exception as e:
-        st.error(f"Erro ao normalizar texto: {str(e)}")
-        return ""
+    if isinstance(texto, str):
+        texto = unidecode(texto.lower())
+        texto = re.sub(r'[^\w\s]', '', texto)
+        texto = re.sub(r'\s+', ' ', texto).strip()
+        return texto
+    return ""
 
-@st.cache_data(ttl=60)
 def carregar_dados():
-    try:
-        if db is None:
-            return []
-        docs = db.collection("respostas").stream()
-        dados = []
-        for doc in docs:
-            d = doc.to_dict()
-            d["id"] = doc.id
-            dados.append(d)
-        return dados
-    except Exception as e:
-        st.error(f"Erro ao carregar dados: {str(e)}")
-        return []
+    docs = db.collection("respostas").stream()
+    return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
-@st.cache_data(ttl=60)
 def carregar_sinonimos():
-    try:
-        if db is None:
-            return []
-        docs = db.collection("sinonimos").stream()
-        sinons = []
-        for doc in docs:
-            d = doc.to_dict()
-            d["id"] = doc.id
-            sinons.append(d)
-        return sinons
-    except Exception as e:
-        st.error(f"Erro ao carregar sinônimos: {str(e)}")
-        return []
+    docs = db.collection("sinonimos").stream()
+    return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
 def salvar_pergunta(pergunta, resposta):
-    if db is None:
-        st.error("Erro: Firebase não inicializado")
-        return False
-    try:
-        db.collection("respostas").document().set({
-            "pergunta": pergunta,
-            "resposta": resposta
-        })
-        return True
-    except Exception as e:
-        st.error(f"Erro ao salvar pergunta: {str(e)}")
-        return False
+    db.collection("respostas").document().set({
+        "pergunta": pergunta,
+        "resposta": resposta
+    })
 
 def atualizar_pergunta(id, pergunta, resposta):
-    if db is None:
-        st.error("Erro: Firebase não inicializado")
-        return False
-    try:
-        db.collection("respostas").document(id).update({
-            "pergunta": pergunta,
-            "resposta": resposta
-        })
-        return True
-    except Exception as e:
-        st.error(f"Erro ao atualizar pergunta: {str(e)}")
-        return False
+    db.collection("respostas").document(id).update({
+        "pergunta": pergunta,
+        "resposta": resposta
+    })
 
 def deletar_pergunta(id):
-    if db is None:
-        st.error("Erro: Firebase não inicializado")
-        return False
-    try:
-        db.collection("respostas").document(id).delete()
-        return True
-    except Exception as e:
-        st.error(f"Erro ao deletar pergunta: {str(e)}")
-        return False
+    db.collection("respostas").document(id).delete()
 
 def salvar_sinonimo(sinonimo, palavra_chave):
-    if db is None:
-        st.error("Erro: Firebase não inicializado")
-        return False
-    try:
-        db.collection("sinonimos").document().set({
-            "sinonimo": sinonimo,
-            "palavra_chave": palavra_chave
-        })
-        return True
-    except Exception as e:
-        st.error(f"Erro ao salvar sinônimo: {str(e)}")
-        return False
+    db.collection("sinonimos").document().set({
+        "sinonimo": sinonimo,
+        "palavra_chave": palavra_chave
+    })
 
 def atualizar_sinonimo(id, sinonimo, palavra_chave):
-    if db is None:
-        st.error("Erro: Firebase não inicializado")
-        return False
-    try:
-        db.collection("sinonimos").document(id).update({
-            "sinonimo": sinonimo,
-            "palavra_chave": palavra_chave
-        })
-        return True
-    except Exception as e:
-        st.error(f"Erro ao atualizar sinônimo: {str(e)}")
-        return False
+    db.collection("sinonimos").document(id).update({
+        "sinonimo": sinonimo,
+        "palavra_chave": palavra_chave
+    })
 
 def deletar_sinonimo(id):
-    if db is None:
-        st.error("Erro: Firebase não inicializado")
-        return False
-    try:
-        db.collection("sinonimos").document(id).delete()
-        return True
-    except Exception as e:
-        st.error(f"Erro ao deletar sinônimo: {str(e)}")
-        return False
+    db.collection("sinonimos").document(id).delete()
 
 def substituir_sinonimos(texto, sinonimos):
     texto_norm = normalizar_texto(texto)
@@ -186,30 +89,78 @@ def substituir_sinonimos(texto, sinonimos):
         texto_norm = re.sub(r'\b' + re.escape(sin) + r'\b', chave, texto_norm)
     return texto_norm
 
-# --- APP STREAMLIT --- #
+# ================================
+# 🎨 CONFIGURAÇÃO DA INTERFACE
+# ================================
+st.set_page_config(page_title="Chatbot Russel 🤖", page_icon="🤖", layout="centered")
+
+st.markdown(
+    """
+    <style>
+    .chat-message {
+        max-width: 70%;
+        padding: 10px 15px;
+        margin: 5px 10px;
+        border-radius: 20px;
+        font-size: 16px;
+        line-height: 1.4;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        box-shadow: 0 1px 1px rgb(0 0 0 / 0.1);
+    }
+    .user-message {
+        background-color: #DCF8C6;
+        margin-left: auto;
+        border-bottom-right-radius: 0;
+    }
+    .bot-message {
+        background-color: #FFFFFF;
+        margin-right: auto;
+        border-bottom-left-radius: 0;
+    }
+    .chat-container {
+        display: flex;
+        flex-direction: column;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# ================================
+# 🚀 APP PRINCIPAL
+# ================================
 st.title("🤖 Chatbot Russel com Firebase")
 
 modo = st.sidebar.radio("Selecione o modo:", ("Colaborador", "Administrador"))
 
+# ====================================
+# 👨‍💻 MODO COLABORADOR
+# ====================================
 if modo == "Colaborador":
     st.subheader("👋 Bem-vindo! Pergunte algo para o Russel")
 
     dados = carregar_dados()
     sinonimos = carregar_sinonimos()
 
-    # Exibe mensagens
-    for message in st.session_state.messages:
-        if message["role"] == "user":
-            st.write(f"**Você:** {message['content']}")
-        else:
-            st.write(f"**Russel:** {message['content']}")
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
 
-    # Input para nova mensagem
+    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+
+    for message in st.session_state.messages:
+        css_class = "user-message" if message["role"] == "user" else "bot-message"
+        st.markdown(
+            f'<div class="chat-message {css_class}">{message["content"].replace("\n", "<br>")}</div>',
+            unsafe_allow_html=True
+        )
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
     prompt = st.chat_input("Digite sua pergunta...")
 
     if prompt:
         st.session_state.messages.append({"role": "user", "content": prompt})
-
         prompt_norm = substituir_sinonimos(prompt, sinonimos)
 
         resposta = "❌ Desculpe, não encontrei uma resposta."
@@ -221,14 +172,19 @@ if modo == "Colaborador":
                 break
 
         st.session_state.messages.append({"role": "assistant", "content": resposta})
-        st.rerun()
+        st.experimental_rerun()
 
     if st.button("🗑️ Limpar conversa"):
         st.session_state.messages = []
-        st.rerun()
 
+# ====================================
+# 🔒 MODO ADMINISTRADOR
+# ====================================
 elif modo == "Administrador":
     st.subheader("🔒 Área Administrativa")
+
+    if "admin" not in st.session_state:
+        st.session_state.admin = False
 
     if not st.session_state.admin:
         senha = st.text_input("Digite a senha:", type="password")
@@ -236,22 +192,20 @@ elif modo == "Administrador":
             if senha == ADMIN_PASSWORD:
                 st.session_state.admin = True
                 st.success("✅ Acesso liberado!")
-                st.rerun()
             else:
                 st.error("❌ Senha incorreta!")
     else:
         st.success("🔓 Acesso como Administrador")
         if st.button("🚪 Sair"):
             st.session_state.admin = False
-            st.rerun()
+            st.experimental_rerun()
 
         st.header("📋 Gerenciar Perguntas e Respostas")
 
         dados = carregar_dados()
-        if dados:
-            df = pd.DataFrame(dados)
-            df_display = df[["pergunta", "resposta"]]
-            st.dataframe(df_display)
+        df = pd.DataFrame(dados)
+        if not df.empty:
+            st.dataframe(df[["pergunta", "resposta"]])
 
         op = st.selectbox("Escolha ação:", ["Nova Pergunta", "Editar Pergunta", "Deletar Pergunta"])
 
@@ -260,44 +214,41 @@ elif modo == "Administrador":
             resposta = st.text_area("Resposta:")
             if st.button("💾 Salvar Nova Pergunta"):
                 if pergunta.strip() and resposta.strip():
-                    if salvar_pergunta(pergunta.strip(), resposta.strip()):
-                        st.success("Pergunta salva!")
-                        st.rerun()
+                    salvar_pergunta(pergunta.strip(), resposta.strip())
+                    st.success("Pergunta salva!")
+                    st.experimental_rerun()
                 else:
                     st.error("Pergunta e resposta não podem ficar vazias.")
 
         elif op == "Editar Pergunta":
-            if dados:
-                ids = [d["id"] for d in dados]
-                sel_id = st.selectbox("Selecione pergunta para editar:", ids)
-                sel_item = next((x for x in dados if x["id"] == sel_id), None)
-                if sel_item:
-                    pergunta = st.text_area("Pergunta:", value=sel_item["pergunta"])
-                    resposta = st.text_area("Resposta:", value=sel_item["resposta"])
-                    if st.button("💾 Atualizar Pergunta"):
-                        if pergunta.strip() and resposta.strip():
-                            if atualizar_pergunta(sel_id, pergunta.strip(), resposta.strip()):
-                                st.success("Pergunta atualizada!")
-                                st.rerun()
-                        else:
-                            st.error("Pergunta e resposta não podem ficar vazias.")
+            ids = [d["id"] for d in dados]
+            sel_id = st.selectbox("Selecione pergunta para editar:", ids)
+            sel_item = next((x for x in dados if x["id"] == sel_id), None)
+            if sel_item:
+                pergunta = st.text_area("Pergunta:", value=sel_item["pergunta"])
+                resposta = st.text_area("Resposta:", value=sel_item["resposta"])
+                if st.button("💾 Atualizar Pergunta"):
+                    if pergunta.strip() and resposta.strip():
+                        atualizar_pergunta(sel_id, pergunta.strip(), resposta.strip())
+                        st.success("Pergunta atualizada!")
+                        st.experimental_rerun()
+                    else:
+                        st.error("Pergunta e resposta não podem ficar vazias.")
 
         elif op == "Deletar Pergunta":
-            if dados:
-                ids = [d["id"] for d in dados]
-                sel_id = st.selectbox("Selecione pergunta para deletar:", ids)
-                if st.button("🗑️ Deletar Pergunta"):
-                    if deletar_pergunta(sel_id):
-                        st.success("Pergunta deletada!")
-                        st.rerun()
+            ids = [d["id"] for d in dados]
+            sel_id = st.selectbox("Selecione pergunta para deletar:", ids)
+            if st.button("🗑️ Deletar Pergunta"):
+                deletar_pergunta(sel_id)
+                st.success("Pergunta deletada!")
+                st.experimental_rerun()
 
         st.divider()
-
         st.header("📚 Gerenciar Sinônimos")
 
         sinonimos = carregar_sinonimos()
-        if sinonimos:
-            df_sinons = pd.DataFrame(sinonimos)
+        df_sinons = pd.DataFrame(sinonimos)
+        if not df_sinons.empty:
             st.dataframe(df_sinons)
 
         op2 = st.selectbox("Escolha ação para Sinônimos:", ["Novo Sinônimo", "Editar Sinônimo", "Deletar Sinônimo"])
@@ -307,33 +258,33 @@ elif modo == "Administrador":
             chave_entrada = st.text_input("Palavra-chave correspondente:")
             if st.button("💾 Salvar Sinônimo"):
                 if sin_entrada.strip() and chave_entrada.strip():
-                    if salvar_sinonimo(sin_entrada.strip(), chave_entrada.strip()):
-                        st.success("Sinônimo salvo!")
-                        st.rerun()
+                    salvar_sinonimo(sin_entrada.strip(), chave_entrada.strip())
+                    st.success("Sinônimo salvo!")
+                    st.experimental_rerun()
                 else:
                     st.error("Preencha os dois campos.")
 
         elif op2 == "Editar Sinônimo":
-            if sinonimos:
-                ids = [s["id"] for s in sinonimos]
-                sel_id = st.selectbox("Selecione sinônimo para editar:", ids)
-                sel_item = next((x for x in sinonimos if x["id"] == sel_id), None)
-                if sel_item:
-                    sin_entrada = st.text_input("Sinônimo:", value=sel_item["sinonimo"])
-                    chave_entrada = st.text_input("Palavra-chave:", value=sel_item["palavra_chave"])
-                    if st.button("💾 Atualizar Sinônimo"):
-                        if sin_entrada.strip() and chave_entrada.strip():
-                            if atualizar_sinonimo(sel_id, sin_entrada.strip(), chave_entrada.strip()):
-                                st.success("Sinônimo atualizado!")
-                                st.rerun()
-                        else:
-                            st.error("Preencha os dois campos.")
+            ids = [s["id"] for s in sinonimos]
+            sel_id = st.selectbox("Selecione sinônimo para editar:", ids)
+            sel_item = next((x for x in sinonimos if x["id"] == sel_id), None)
+            if sel_item:
+                sin_entrada = st.text_input("Sinônimo:", value=sel_item["sinonimo"])
+                chave_entrada = st.text_input("Palavra-chave:", value=sel_item["palavra_chave"])
+                if st.button("💾 Atualizar Sinônimo"):
+                    if sin_entrada.strip() and chave_entrada.strip():
+                        atualizar_sinonimo(sel_id, sin_entrada.strip(), chave_entrada.strip())
+                        st.success("Sinônimo atualizado!")
+                        st.experimental_rerun()
+                    else:
+                        st.error("Preencha os dois campos.")
 
         elif op2 == "Deletar Sinônimo":
-            if sinonimos:
-                ids = [s["id"] for s in sinonimos]
-                sel_id = st.selectbox("Selecione sinônimo para deletar:", ids)
-                if st.button("🗑️ Deletar Sinônimo"):
-                    if deletar_sinonimo(sel_id):
-                        st.success("Sinônimo deletado!")
-                        st.rerun()
+            ids = [s["id"] for s in sinonimos]
+            sel_id = st.selectbox("Selecione sinônimo para deletar:", ids)
+            if st.button("🗑️ Deletar Sinônimo"):
+                deletar_sinonimo(sel_id)
+                st.success("Sinônimo deletado!")
+                st.experimental_rerun()
+
+        st.divider()
