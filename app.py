@@ -23,8 +23,6 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "admin" not in st.session_state:
     st.session_state.admin = False
-if "chat_key" not in st.session_state:
-    st.session_state.chat_key = 0
 
 # Configurações de cache
 @st.cache_resource(ttl=3600)
@@ -189,39 +187,6 @@ def substituir_sinonimos(texto, sinonimos):
     return texto_norm
 
 # --- APP STREAMLIT --- #
-
-st.markdown(
-    """
-    <style>
-    .chat-message {
-        max-width: 70%;
-        padding: 10px 15px;
-        margin: 5px 10px;
-        border-radius: 20px;
-        font-size: 16px;
-        line-height: 1.4;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-        box-shadow: 0 1px 1px rgb(0 0 0 / 0.1);
-    }
-    .user-message {
-        background-color: #DCF8C6;
-        margin-left: auto;
-        border-bottom-right-radius: 0;
-    }
-    .bot-message {
-        background-color: #FFFFFF;
-        margin-right: auto;
-        border-bottom-left-radius: 0;
-    }
-    .chat-container {
-        display: flex;
-        flex-direction: column;
-    }
-    </style>
-    """, unsafe_allow_html=True
-)
-
 st.title("🤖 Chatbot Russel com Firebase")
 
 modo = st.sidebar.radio("Selecione o modo:", ("Colaborador", "Administrador"))
@@ -232,21 +197,18 @@ if modo == "Colaborador":
     dados = carregar_dados()
     sinonimos = carregar_sinonimos()
 
-    # Container para mensagens
-    messages_container = st.container()
-    with messages_container:
-        for message in st.session_state.messages:
-            if message["role"] == "user":
-                st.markdown(f"**Você:** {message['content']}")
-            else:
-                st.markdown(f"**Russel:** {message['content']}")
+    # Exibe mensagens
+    for message in st.session_state.messages:
+        if message["role"] == "user":
+            st.write(f"**Você:** {message['content']}")
+        else:
+            st.write(f"**Russel:** {message['content']}")
 
     # Input para nova mensagem
     prompt = st.chat_input("Digite sua pergunta...")
 
     if prompt:
         st.session_state.messages.append({"role": "user", "content": prompt})
-        st.session_state.chat_key += 1
 
         prompt_norm = substituir_sinonimos(prompt, sinonimos)
 
@@ -263,7 +225,6 @@ if modo == "Colaborador":
 
     if st.button("🗑️ Limpar conversa"):
         st.session_state.messages = []
-        st.session_state.chat_key += 1
         st.rerun()
 
 elif modo == "Administrador":
