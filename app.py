@@ -6,15 +6,12 @@ from unidecode import unidecode
 import re
 import pandas as pd
 import json
-import os
 
 # --- CONFIG FIREBASE --- #
 # Carregar credenciais do secrets no Streamlit Cloud ou do arquivo local
 if "firebase_json" in st.secrets:
     cred_info = json.loads(st.secrets["firebase_json"])
     cred = credentials.Certificate(cred_info)
-else:
-    cred = credentials.Certificate("pergunte-russel.json")
 
 if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
@@ -134,12 +131,12 @@ if modo == "Colaborador":
     for message in st.session_state.messages:
         if message["role"] == "user":
             st.markdown(
-                f'<div class="chat-message user-message">{message["content"].replace("\n", "<br>")}</div>',
+                f'<div class="chat-message user-message">{message["content"].replace("\\n", "<br>")}</div>',
                 unsafe_allow_html=True
             )
         else:
             st.markdown(
-                f'<div class="chat-message bot-message">{message["content"].replace("\n", "<br>")}</div>',
+                f'<div class="chat-message bot-message">{message["content"].replace("\\n", "<br>")}</div>',
                 unsafe_allow_html=True
             )
 
@@ -162,7 +159,7 @@ if modo == "Colaborador":
 
         st.session_state.messages.append({"role": "assistant", "content": resposta})
 
-        st.rerun()
+        st.experimental_rerun()
 
     if st.button("🗑️ Limpar conversa"):
         st.session_state.messages = []
@@ -186,7 +183,7 @@ elif modo == "Administrador":
         st.success("🔓 Acesso como Administrador")
         if st.button("🚪 Sair"):
             st.session_state.admin = False
-            st.rerun()
+            st.experimental_rerun()
 
         st.header("📋 Gerenciar Perguntas e Respostas")
 
@@ -204,7 +201,7 @@ elif modo == "Administrador":
                 if pergunta.strip() and resposta.strip():
                     salvar_pergunta(pergunta.strip(), resposta.strip())
                     st.success("Pergunta salva!")
-                    st.rerun()
+                    st.experimental_rerun()
                 else:
                     st.error("Preencha todos os campos.")
 
@@ -219,7 +216,7 @@ elif modo == "Administrador":
                     if pergunta.strip() and resposta.strip():
                         atualizar_pergunta(sel_id, pergunta.strip(), resposta.strip())
                         st.success("Pergunta atualizada!")
-                        st.rerun()
+                        st.experimental_rerun()
                     else:
                         st.error("Preencha todos os campos.")
 
@@ -229,7 +226,7 @@ elif modo == "Administrador":
             if st.button("🗑️ Deletar Pergunta"):
                 deletar_pergunta(sel_id)
                 st.success("Pergunta deletada!")
-                st.rerun()
+                st.experimental_rerun()
 
         st.divider()
 
@@ -249,7 +246,7 @@ elif modo == "Administrador":
                 if sin_entrada.strip() and chave_entrada.strip():
                     salvar_sinonimo(sin_entrada.strip(), chave_entrada.strip())
                     st.success("Sinônimo salvo!")
-                    st.rerun()
+                    st.experimental_rerun()
                 else:
                     st.error("Preencha os dois campos.")
 
@@ -264,7 +261,7 @@ elif modo == "Administrador":
                     if sin_entrada.strip() and chave_entrada.strip():
                         atualizar_sinonimo(sel_id, sin_entrada.strip(), chave_entrada.strip())
                         st.success("Sinônimo atualizado!")
-                        st.rerun()
+                        st.experimental_rerun()
                     else:
                         st.error("Preencha os dois campos.")
 
@@ -274,6 +271,6 @@ elif modo == "Administrador":
             if st.button("🗑️ Deletar Sinônimo"):
                 deletar_sinonimo(sel_id)
                 st.success("Sinônimo deletado!")
-                st.rerun()
+                st.experimental_rerun()
 
         st.divider()
