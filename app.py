@@ -10,8 +10,8 @@ import json
 # --- CONFIG FIREBASE --- #
 # Carregar credenciais do secrets no Streamlit Cloud ou do arquivo local
 try:
-    if "firebase_json" in st.secrets:
-        cred_info = json.loads(st.secrets["firebase_json"])
+    if "gcp" in st.secrets and "service_account" in st.secrets["gcp"]:
+        cred_info = json.loads(st.secrets["gcp"]["service_account"])
         cred = credentials.Certificate(cred_info)
         
         if not firebase_admin._apps:
