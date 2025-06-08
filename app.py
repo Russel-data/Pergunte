@@ -11,13 +11,27 @@ import json
 # Carregar credenciais do secrets no Streamlit Cloud ou do arquivo local
 try:
     if "gcp" in st.secrets and "service_account" in st.secrets["gcp"]:
+        # Debug: Verificar se as credenciais estão presentes
+        st.write("Debug: Credenciais encontradas")
+        
+        # Carregar e limpar as credenciais
         cred_info = json.loads(st.secrets["gcp"]["service_account"])
+        
+        # Garantir que a private_key está no formato correto
+        if "private_key" in cred_info:
+            cred_info["private_key"] = cred_info["private_key"].replace("\\n", "\n")
+        
+        # Debug: Verificar se as credenciais foram carregadas
+        st.write("Debug: Credenciais carregadas com sucesso")
+        
         cred = credentials.Certificate(cred_info)
         
         if not firebase_admin._apps:
             firebase_admin.initialize_app(cred)
+            st.write("Debug: Firebase inicializado com sucesso")
             
         db = firestore.client()
+        st.write("Debug: Cliente Firestore criado")
     else:
         st.error("❌ Credenciais do Firebase não encontradas. Por favor, configure as credenciais no Streamlit Secrets.")
         st.stop()
