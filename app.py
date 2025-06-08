@@ -1,4 +1,39 @@
 import streamlit as st
+
+# Configuração da página deve ser o primeiro comando Streamlit
+st.set_page_config(page_title="Chatbot Russel 🤖", page_icon="🤖", layout="centered")
+
+# Estilo CSS - Balões estilo WhatsApp
+st.markdown("""
+<style>
+.chat-message {
+    max-width: 70%;
+    padding: 10px 15px;
+    margin: 5px 10px;
+    border-radius: 20px;
+    font-size: 16px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    box-shadow: 0 1px 1px rgb(0 0 0 / 0.1);
+}
+.user-message {
+    background-color: #DCF8C6;
+    margin-left: auto;
+    border-bottom-right-radius: 0;
+}
+.bot-message {
+    background-color: #FFFFFF;
+    margin-right: auto;
+    border-bottom-left-radius: 0;
+}
+.chat-container {
+    display: flex;
+    flex-direction: column;
+}
+</style>
+""", unsafe_allow_html=True)
+
 import firebase_admin
 from firebase_admin import credentials, firestore
 from fuzzywuzzy import fuzz
@@ -99,39 +134,6 @@ def substituir_sinonimos(texto, sinonimos):
     return texto_norm
 
 # --- INTERFACE STREAMLIT --- #
-
-st.set_page_config(page_title="Chatbot Russel 🤖", page_icon="🤖", layout="centered")
-
-# Estilo CSS - Balões estilo WhatsApp
-st.markdown("""
-<style>
-.chat-message {
-    max-width: 70%;
-    padding: 10px 15px;
-    margin: 5px 10px;
-    border-radius: 20px;
-    font-size: 16px;
-    line-height: 1.4;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    box-shadow: 0 1px 1px rgb(0 0 0 / 0.1);
-}
-.user-message {
-    background-color: #DCF8C6;
-    margin-left: auto;
-    border-bottom-right-radius: 0;
-}
-.bot-message {
-    background-color: #FFFFFF;
-    margin-right: auto;
-    border-bottom-left-radius: 0;
-}
-.chat-container {
-    display: flex;
-    flex-direction: column;
-}
-</style>
-""", unsafe_allow_html=True)
 
 st.title("🤖 Chatbot Russel com Firebase")
 
