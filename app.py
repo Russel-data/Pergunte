@@ -50,21 +50,35 @@ try:
         st.write("Debug: Credenciais encontradas")
         
         # Carregar e limpar as credenciais
-        cred_info = json.loads(st.secrets["gcp"]["service_account"])
+        service_account_str = st.secrets["gcp"]["service_account"]
+        
+        # Remover aspas extras e caracteres de escape
+        if service_account_str.startswith('"""') or service_account_str.startswith("'''"):
+            service_account_str = service_account_str[3:-3]
+        
+        # Converter a string para JSON
+        cred_info = json.loads(service_account_str)
         
         # Garantir que a private_key está no formato correto
         if "private_key" in cred_info:
-            cred_info["private_key"] = cred_info["private_key"].replace("\\n", "\n")
+            # Remover caracteres de escape extras
+            private_key = cred_info["private_key"]
+            private_key = private_key.replace('\\n', '\n')
+            private_key = private_key.replace('\\\\', '\\')
+            cred_info["private_key"] = private_key
         
         # Debug: Verificar se as credenciais foram carregadas
         st.write("Debug: Credenciais carregadas com sucesso")
         
+        # Criar credenciais
         cred = credentials.Certificate(cred_info)
         
+        # Inicializar o Firebase apenas se ainda não estiver inicializado
         if not firebase_admin._apps:
             firebase_admin.initialize_app(cred)
             st.write("Debug: Firebase inicializado com sucesso")
-            
+        
+        # Criar cliente Firestore
         db = firestore.client()
         st.write("Debug: Cliente Firestore criado")
     else:
