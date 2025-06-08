@@ -9,14 +9,21 @@ import json
 
 # --- CONFIG FIREBASE --- #
 # Carregar credenciais do secrets no Streamlit Cloud ou do arquivo local
-if "firebase_json" in st.secrets:
-    cred_info = json.loads(st.secrets["firebase_json"])
-    cred = credentials.Certificate(cred_info)
-
-if not firebase_admin._apps:
-    firebase_admin.initialize_app(cred)
-
-db = firestore.client()
+try:
+    if "firebase_json" in st.secrets:
+        cred_info = json.loads(st.secrets["firebase_json"])
+        cred = credentials.Certificate(cred_info)
+        
+        if not firebase_admin._apps:
+            firebase_admin.initialize_app(cred)
+            
+        db = firestore.client()
+    else:
+        st.error("❌ Credenciais do Firebase não encontradas. Por favor, configure as credenciais no Streamlit Secrets.")
+        st.stop()
+except Exception as e:
+    st.error(f"❌ Erro ao inicializar o Firebase: {str(e)}")
+    st.stop()
 
 # --- CONSTANTES --- #
 ADMIN_PASSWORD = "admin123"
