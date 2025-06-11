@@ -241,7 +241,7 @@ hr {
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🤖 Russel - Chatbot Moderno")
+st.title("🤖 Russel - Chatbot CDI g")
 
 # Sidebar para navegação
 modo = st.sidebar.selectbox("Modo de Acesso", ("Colaborador", "Administrador"))
